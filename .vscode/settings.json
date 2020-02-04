@@ -1,6 +1,16 @@
 {
   "javascript.validate.enable": false,
   "flow.useNPMPackagedFlow": true,
+
+  "[javascriptreact]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "[javascript]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+
   "search.exclude": {
     ".git": true,
     ".eslintcache": true,
