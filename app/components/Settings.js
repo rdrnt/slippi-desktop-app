@@ -159,6 +159,8 @@ export default class Settings extends Component {
 
     const isoValidationState = _.get(store, 'isoValidationState') || 'unknown';
 
+    console.log('Rendering', store.settings);
+
     const inputs = [
       <div key="meleeISOInput" className={styles['iso-selection-container']}>
         <ActionInput
@@ -171,17 +173,31 @@ export default class Settings extends Component {
         />
         {this.renderISOVersionCheck()}
       </div>,
-      <ActionInput
-        key="replayRootInput"
-        label="Replay Root Directory"
-        description={
-          'The folder where your slp files are stored. Will usually be the ' +
+      <div key="slippiPaths">
+        <LabelDescription
+          label="Replay Root Directory"
+          description={
+            'The folder where your slp files are stored. Will usually be the ' +
           'Slippi folder located with Dolphin'
-        }
-        value={store.settings.rootSlpPath}
-        onClick={this.props.browseFolder}
-        handlerParams={['rootSlpPath']}
-      />,
+          }
+        />
+
+        {store.settings.slpReplayPaths.map((path) => <ActionInput
+          key={`replayRootInput-${path}`}
+          showLabelDescription={false}
+          value={path}
+          onClick={this.props.browseFolder}
+          handlerParams={['slpReplayPaths']}
+        />)}
+        <ActionInput
+          key="replayRootInput2"
+          showLabelDescription={false}
+          value=""
+          onClick={this.props.browseFolder}
+          handlerParams={['slpReplayPaths']}
+        />
+
+      </div>,
     ];
 
     const platform = process.platform;

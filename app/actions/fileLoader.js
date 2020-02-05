@@ -14,7 +14,7 @@ export const STORE_SCROLL_POSITION = 'STORE_SCROLL_POSITION';
 
 export function loadRootFolder() {
   return async (dispatch, getState) => {
-    const rootFolderPath = electronSettings.get('settings.rootSlpPath');
+    const rootFolderPath = electronSettings.get('settings.slpReplayPaths');
     if (!rootFolderPath) {
       dispatch({
         type: LOAD_ROOT_FOLDER,

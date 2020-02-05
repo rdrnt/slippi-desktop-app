@@ -23,9 +23,9 @@ function getAvailableSettings() {
       location: 'settings.isoPath',
       defaultValue: "",
     },
-    rootSlpPath: {
-      location: 'settings.rootSlpPath',
-      defaultValue: "",
+    slpReplayPaths: {
+      location: 'settings.slpReplayPaths',
+      defaultValue: [],
     },
     playbackDolphinPath: {
       location: 'settings.playbackDolphinPath',
@@ -39,13 +39,23 @@ function getStoredSettings() {
   fixSettingsOnNewVersion();
 
   const availableSettings = getAvailableSettings();
+
   return _.mapValues(availableSettings, settingConfig => {
     let value = electronSettings.get(settingConfig.location);
+
     if (!value) {
       // Ideally I would do this by using the default param of electronSettings.get
       // but it seems like it doesn't work with empty string
       value = settingConfig.defaultValue;
     }
+
+    // If their replay path is a string, convert it to an array
+    if (settingConfig.location === 'settings.slpReplayPaths' && typeof value === 'string') {
+      value = [value];
+    }
+
+
+
     return value;
   });
 }
@@ -96,12 +106,31 @@ function selectFileOrFolder(state, action) {
 
   // Save into electron settings
   const availableSettings = getAvailableSettings();
+
+  console.log(state, action);
+
   const location = _.get(availableSettings, [payload.field, 'location']);
   electronSettings.set(location, payload.path);
 
-  // Update state
+  // The current state
   const newState = { ...state };
-  newState.settings[payload.field] = payload.path;
+
+  // Since slpReplayPaths are an array, we need to store them differently
+  if (payload.field === 'slpReplayPaths') {
+    const newReplayPaths = [...newState.settings[payload.field], payload.path];
+    console.log('The new replay paths', newReplayPaths);
+    // Set the settigns
+    electronSettings.set(location, newReplayPaths);
+
+    // Update the state
+    newState.settings[payload.field] = newReplayPaths;
+  } else {
+    // Set the settigns
+    electronSettings.set(location, payload.path);
+
+    // Update the state
+    newState.settings[payload.field] = payload.path;
+  }
 
   return newState;
 }

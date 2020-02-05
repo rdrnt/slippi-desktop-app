@@ -2,12 +2,14 @@
   "javascript.validate.enable": false,
   "flow.useNPMPackagedFlow": true,
 
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true,
+  },
+
   "[javascriptreact]": {
-    "editor.formatOnSave": true,
     "editor.defaultFormatter": "dbaeumer.vscode-eslint"
   },
   "[javascript]": {
-    "editor.formatOnSave": true,
     "editor.defaultFormatter": "dbaeumer.vscode-eslint"
   },
 
