@@ -121,11 +121,8 @@ export function playFile(file) {
     }
 
     const dolphinManager = getState().fileLoader.dolphinManager;
-    dolphinManager.playFile(filePath).catch((err) => {
-      const errorAction = displayError(
-        'fileLoader-global',
-        err.message,
-      );
+    dolphinManager.playFile(filePath).catch(err => {
+      const errorAction = displayError('fileLoader-global', err.message);
 
       dispatch(errorAction);
     });
@@ -140,19 +137,29 @@ export function queueFiles(files) {
 
     const dolphinManager = getState().fileLoader.dolphinManager;
     dolphinManager.queueFiles(files).catch(err => {
-      const errorAction = displayError(
-        'fileLoader-global',
-        err.message,
-      );
+      const errorAction = displayError('fileLoader-global', err.message);
 
       dispatch(errorAction);
     });
   };
 }
 
+export function deleteFiles(files) {
+  return async () => {
+    if (!Array.isArray(files) || files.length === 0) {
+      return;
+    }
+
+    const deleteAll = files.map(file => fs.unlinkSync(file.fullPath));
+    await Promise.all([...deleteAll]);
+
+    console.log('DOne deleteing');
+  };
+}
+
 async function loadFilesInFolder(folderPath) {
   const readdirPromise = new Promise((resolve, reject) => {
-    fs.readdir(folderPath, {withFileTypes: true}, (err, dirents) => {
+    fs.readdir(folderPath, { withFileTypes: true }, (err, dirents) => {
       if (err) {
         reject(err);
       }
@@ -160,65 +167,66 @@ async function loadFilesInFolder(folderPath) {
     });
   });
 
-  const filesPromise = readdirPromise.then(dirents => (
-    dirents.filter(dirent => (
-      dirent.isFile()
-    )).map(dirent => (
-      dirent.name
-    )).filter(fileName => (
-      // Filter for all .slp files
-      path.extname(fileName) === ".slp"
-    )).map(fileName => {
-      // Compute header information for display
-      const fullPath = path.join(folderPath, fileName);
-      let game = null;
-      let hasError = false;
+  const filesPromise = readdirPromise.then(dirents =>
+    dirents
+      .filter(dirent => dirent.isFile())
+      .map(dirent => dirent.name)
+      .filter(
+        fileName =>
+          // Filter for all .slp files
+          path.extname(fileName) === '.slp'
+      )
+      .map(fileName => {
+        // Compute header information for display
+        const fullPath = path.join(folderPath, fileName);
+        let game = null;
+        let hasError = false;
 
-      // Pre-load settings here
-      try {
-        game = new SlippiGame(fullPath);
+        // Pre-load settings here
+        try {
+          game = new SlippiGame(fullPath);
 
-        // Preload settings
-        const settings = game.getSettings();
-        if (_.isEmpty(settings.players)) {
-          throw new Error("Game settings could not be properly loaded.");
+          // Preload settings
+          const settings = game.getSettings();
+          if (_.isEmpty(settings.players)) {
+            throw new Error('Game settings could not be properly loaded.');
+          }
+
+          // Preload metadata
+          game.getMetadata();
+        } catch (err) {
+          console.log(`Failed to parse file: ${fullPath}`);
+          console.log(err);
+          hasError = true;
         }
 
-        // Preload metadata
-        game.getMetadata();
-      } catch (err) {
-        console.log(`Failed to parse file: ${fullPath}`);
-        console.log(err);
-        hasError = true;
-      }
+        return {
+          fullPath: fullPath,
+          fileName: fileName,
+          game: game,
+          hasError: hasError,
+        };
+      })
+  );
 
-      return {
-        fullPath: fullPath,
-        fileName: fileName,
-        game: game,
-        hasError: hasError,
-      };
-    })
-  ));
-
-  const foldersPromise = readdirPromise.then(dirents => (
-    dirents.filter(dirent => (
-      dirent.isDirectory()
-    )).map(dirent => {
-      const folderName = dirent.name;
-      const fullPath = path.join(folderPath, folderName);
-      return {
-        fullPath: fullPath,
-        folderName: folderName,
-        expanded: true,
-        subDirectories: [],
-      };
-    })
-  ));
+  const foldersPromise = readdirPromise.then(dirents =>
+    dirents
+      .filter(dirent => dirent.isDirectory())
+      .map(dirent => {
+        const folderName = dirent.name;
+        const fullPath = path.join(folderPath, folderName);
+        return {
+          fullPath: fullPath,
+          folderName: folderName,
+          expanded: true,
+          subDirectories: [],
+        };
+      })
+  );
 
   return Promise.all([filesPromise, foldersPromise]);
 }
 
 async function wait(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise(resolve => setTimeout(resolve, ms));
 }

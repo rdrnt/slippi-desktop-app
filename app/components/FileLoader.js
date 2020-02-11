@@ -27,6 +27,7 @@ export default class FileLoader extends Component {
     changeFolderSelection: PropTypes.func.isRequired,
     playFile: PropTypes.func.isRequired,
     queueFiles: PropTypes.func.isRequired,
+    deleteFiles: PropTypes.func.isRequired,
     storeScrollPosition: PropTypes.func.isRequired,
 
     // game actions
@@ -66,10 +67,17 @@ export default class FileLoader extends Component {
 
     this.refTableScroll.scrollTo(xPos, yPos);
 
-    if (this.props.history.action === "PUSH") {
+    if (this.props.history.action === 'PUSH') {
       // I don't really like this but when returning back to the file loader, the action is "POP"
       // instead of "PUSH", and we don't want to trigger the loader and ruin our ability to restore
       // scroll position when returning to fileLoader from a game
+      this.props.loadRootFolder();
+    }
+
+    // If we're in development and the page reloads, it check for files
+    // So as a fix , if we're not already loading the files, and we dont have any files
+    // load the root folder
+    if (!this.props.store.isLoading && this.props.store.files.length === 0) {
       this.props.loadRootFolder();
     }
   }
@@ -89,7 +97,7 @@ export default class FileLoader extends Component {
     this.refTableScroll = element;
   };
 
-  onSelect = (selectedFile) => {
+  onSelect = selectedFile => {
     const newSelections = [];
 
     let wasSeen = false;
@@ -107,7 +115,7 @@ export default class FileLoader extends Component {
     this.setState({
       selections: newSelections,
     });
-  }
+  };
 
   renderSidebar() {
     const store = this.props.store || {};
@@ -176,18 +184,28 @@ export default class FileLoader extends Component {
     return resultFiles;
   }
 
+  queueDelete = () => {
+    const filesToDelete = this.state.selections;
+    this.setState({
+      selections: [],
+    }, () => {
+      this.props.deleteFiles(filesToDelete);
+      this.props.loadRootFolder();
+    });
+  };
+
   queueClear = () => {
     this.setState({
       selections: [],
     });
-  }
+  };
 
   queueFiles = () => {
     this.props.queueFiles(this.state.selections);
     this.setState({
       selections: [],
     });
-  }
+  };
 
   renderGlobalError() {
     const errors = this.props.errors || {};
@@ -378,6 +396,10 @@ export default class FileLoader extends Component {
           <Icon name="dont" />
           Clear
         </Button>
+        <Button onClick={this.queueDelete}>
+          <Icon name="trash" />
+          Delete
+        </Button>
       </div>
     );
   }
@@ -388,6 +410,7 @@ export default class FileLoader extends Component {
     const processedFiles = this.processFiles(files);
     const mainStyles = `main-padding ${styles['loader-main']}`;
 
+
     return (
       <div className={mainStyles}>
         <PageHeader
@@ -395,7 +418,10 @@ export default class FileLoader extends Component {
           text="Replay Browser"
           history={this.props.history}
         />
-        <Scroller ref={this.setTableScrollRef} topOffset={this.props.topNotifOffset}>
+        <Scroller
+          ref={this.setTableScrollRef}
+          topOffset={this.props.topNotifOffset}
+        >
           {this.renderGlobalError()}
           {this.renderFilteredFilesNotif(processedFiles)}
           {this.renderFileSelection(processedFiles)}
@@ -406,6 +432,7 @@ export default class FileLoader extends Component {
   }
 
   render() {
+    console.log('files', this.props.store.files);
     return (
       <PageWrapper history={this.props.history}>
         <div className={styles['layout']}>
